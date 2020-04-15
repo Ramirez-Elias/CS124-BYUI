@@ -25,7 +25,7 @@ char getOption();
 void editSquare(int &value, char coordinates[], int size);
 void writeFile(char board[][SIZE], char fileName[]);
 void displayPossible(char board[][SIZE], int &value, char coordinates[], int size);
-//void computeValues();
+void computeValues(char board[][SIZE], int &value, char coordinates[], int size);
 
 /**********************************************************************
  * MAIN
@@ -133,7 +133,8 @@ void interact(bool &play)
 				//If the user types ‘E’, then the program will prompt him 
 				//for the coordinates and the value for the square to be
 			    //edited:
-				editSquare(value, coordinates, 3);
+				//editSquare(value, coordinates, 3);
+				computeValues(board, value, coordinates, 3);
 				break;
 			case 'S':
 				//If the user types ‘S’, then the program will prompt him 
@@ -209,6 +210,7 @@ void editSquare(int &value, char coordinates[], int size)
 	//display input and request value
 	cout << "What is the value at \'" << coordinates[0] << coordinates[1] << "\': ";
 	cin >> value;
+
 }
 
 /**********************************************************************
@@ -349,8 +351,178 @@ void writeFile(char board[][SIZE], char fileName[])
  * sure to include both the logic for the rules of the game(only one of
  * each number on a row, column, and inside square), but also to display
  * the values.
-************************************************************************/
-/*void computeValues(char board[][SIZE], char coordinates[])
-{
 
-}*/
+1 - look for less 0's (if zero == 1) is perfect
+2 - solve
+getNumber of existing numbers in grid
+getPossibleValues
+Start with1stGrid = Elimiante any repeated number
+Check 1st square, can any number be eliminated
+Check 2nd square, can any number be eliminated
+Cont.with 2Grid = Elimiante any repeated number
+Check 3rd square, can any number be eliminated
+Check 4th sq., can any number be eliminated
+Check remaining possible numbers
+Check 1st square
+Check 2nd square
+Check 3rd square
+Skip 4th Sq.
+check 1st Sq
+check 4th sq
+Break.
+if tie, brake an go look for another one
+
+
+//grid # 0 = [0][0] to [2][2]
+//grid # 1 = [0][3] to [2][5]
+//grid # 2 = [0][6] to [2][8]
+//grid # 3 = [3][0] to [5][2]
+//grid # 4 = [3][3] to [5][5]
+//grid # 5 = [3][6] to [5][8]
+//grid # 6 = [6][0] to [8][2]
+//grid # 7 = [6][3] to [8][5]
+//grid # 8 = [6][6] to [8][8]
+
+
+*  0 | 1 | 2
+* ---+---+---
+*  3 | 4 | 5
+* ---+---+---
+*  6 | 7 | 8
+
+************************************************************************/
+
+void computeValues(char board[][SIZE], int &value, char coordinates[], int size)
+{
+	//convert coordinates
+	int col(0);
+	switch (coordinates[0])
+	{
+	case 'A':
+		col = 0;
+		break;
+	case 'B':
+		col = 1;
+		break;
+	case 'C':
+		col = 2;
+		break;
+	case 'D':
+		col = 3;
+		break;
+	case 'E':
+		col = 4;
+		break;
+	case 'F':
+		col = 5;
+		break;
+	case 'G':
+		col = 6;
+		break;
+	case 'H':
+		col = 7;
+		break;
+	case 'I':
+		col = 7;
+		break;
+	default:
+		break;
+	}
+
+	//row
+	//very simple ascii to int to array conversion 
+	int row = ((int)coordinates[1]) - 49;
+	
+	// 1- look for less 0's (if zero == 1) is perfect
+	
+	//This variable will contain the number of 0's per Grid
+	//      0 | 1 | 2
+	//	   ---+---+---
+	//	    3 | 4 | 5
+	//	   ---+---+---
+	//	    6 | 7 | 8
+
+	int gridContent[9] = {};
+	int grid[9][9] = {};
+
+	int index(0);
+	char colu('a');
+	int element(0);
+	for (int gridRow(0); gridRow < 3; gridRow++)
+	{
+		for (int gridCol(0); gridCol < 3; gridCol++)
+		{
+			
+			
+			//Lets make it better
+			for (int r(0); r < 9; r++)
+			{
+
+				if (r / 3 == gridRow)
+				{
+					for (int c(0); c < 9; c++)
+					{
+						switch (c)
+						{
+						case 0:
+							colu = 'A';
+							break;
+						case 1:
+							colu = 'B';
+							break;
+						case 2:
+							colu = 'C';
+							break;
+						case 3:
+							colu = 'D';
+							break;
+						case 4:
+							colu = 'E';
+							break;
+						case 5:
+							colu = 'F';
+							break;
+						case 6:
+							colu = 'G';
+							break;
+						case 7:
+							colu = 'H';
+							break;
+						case 8:
+							colu = 'I';
+							break;
+						default:
+							break;
+						}
+
+						if (c / 3 == gridCol)
+						{
+
+							if (board[r][c] == '0')
+								gridContent[index] += 1;
+							grid[index][element] = ((int)board[r][c]) - 48;
+							element++;
+							if (element == 9)
+							{
+								element = 0;
+								index++;
+							}
+						}
+					}
+					
+				}
+
+			
+			}
+
+		}
+	}
+
+	for (int i(0); i < 9; i++)
+	{
+		for (int j(0); j < 9; j++)
+		cout << "Grid #" << i <<": " << grid[i][j] << endl;
+	}
+	cout << endl;
+
+}
