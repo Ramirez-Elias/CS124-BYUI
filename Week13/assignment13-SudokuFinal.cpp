@@ -18,15 +18,22 @@ using namespace std;
 //prototype
 void getFile(char fileName[], int size);
 void interact(bool &play);
-void readFile(char board[][SIZE], char fileName[]);
-void displayBoard(char board[][SIZE]);
+void readFile(int board[][SIZE], char fileName[]);
+void displayBoard(int board[][SIZE]);
 void displayOptions();
 char getOption();
 void editSquare(int &value, char coordinates[], int size);
-void writeFile(char board[][SIZE], char fileName[]);
-void displayPossible(char board[][SIZE], int &value, char coordinates[], int size);
-void computeValues(char board[][SIZE], int &value, char coordinates[], int size);
-
+void writeFile(int board[][SIZE], char fileName[]);
+void displayPossible(int board[][SIZE], int &value, char coordinates[], int size);
+void computeValues(int board[][SIZE], int &value, char coordinates[], int size);
+//additional functions created for fun
+void getHorizontalValues(int board[][SIZE], int rowContent[], int row);
+void getVerticalValues(int board[][SIZE], int rowContent[], int row);
+void createGrid(int board[][SIZE], int totalZeros[], int grid[][9]);
+int getPossibleValues(int gridLine[], int possibleValues[]);
+int mergeLines(int possibleValues[], int possibleValuesVer[], int verSize, int possibleValuesHor[], int horSize, int gridHorizontal[], int gridVertical[]);
+int getGridValue(int grid[][SIZE], int col, int row, int &gridNumber);
+int removePossible(int possibleValues[], int mergeValues[], int possibleSize, int grid[][SIZE], int gridNumber);
 /**********************************************************************
  * MAIN
  * The program will prompt the user for the filename of the game he or 
@@ -62,7 +69,7 @@ void getFile(char fileName[], int size)
 /**********************************************************************
  * readFile
 ************************************************************************/
-void readFile(char board[][SIZE], char fileName[])
+void readFile(int board[][SIZE], char fileName[])
 {
 	//open file
 	ifstream fin(fileName);
@@ -100,7 +107,7 @@ void interact(bool &play)
 {
 	//variables
 	char filename[256];
-	char board[SIZE][SIZE];
+	int board[SIZE][SIZE];
 	bool firstRun(true);
 	char option('D');
 	int value(0);
@@ -133,7 +140,7 @@ void interact(bool &play)
 				//If the user types ‘E’, then the program will prompt him 
 				//for the coordinates and the value for the square to be
 			    //edited:
-				//editSquare(value, coordinates, 3);
+				editSquare(value, coordinates, 3);
 				computeValues(board, value, coordinates, 3);
 				break;
 			case 'S':
@@ -216,7 +223,7 @@ void editSquare(int &value, char coordinates[], int size)
 /**********************************************************************
  * displayPossible()
 ************************************************************************/
-void displayPossible(char board[][SIZE], int &value, char coordinates[], int size)
+void displayPossible(int board[][SIZE], int &value, char coordinates[], int size)
 {
 	//get coordinate
 	cin.ignore();
@@ -235,7 +242,7 @@ void displayPossible(char board[][SIZE], int &value, char coordinates[], int siz
 /**********************************************************************
  * displayBoard()
 ************************************************************************/
-void displayBoard(char board[][SIZE])
+void displayBoard(int board[][SIZE])
 {
 	//this variable will help with the Number Column
 	int counter(1);
@@ -263,7 +270,7 @@ void displayBoard(char board[][SIZE])
 			{
 				//if a "." then, do not display it on the screen
 				//steps below will take care of 0's
-				if (board[row][col] == '0')
+				if (board[row][col] == 0)
 				{
 					if (col == 0)
 					{
@@ -304,7 +311,7 @@ void displayBoard(char board[][SIZE])
 /**********************************************************************
  * writeFile()
 ************************************************************************/
-void writeFile(char board[][SIZE], char fileName[])
+void writeFile(int board[][SIZE], char fileName[])
 {
 	//simple function
 	cout << "What file would you like to write your board to: ";
@@ -392,7 +399,7 @@ if tie, brake an go look for another one
 
 ************************************************************************/
 
-void computeValues(char board[][SIZE], int &value, char coordinates[], int size)
+void computeValues(int board[][SIZE], int &value, char coordinates[], int size)
 {
 	//convert coordinates
 	int col(0);
@@ -429,10 +436,9 @@ void computeValues(char board[][SIZE], int &value, char coordinates[], int size)
 		break;
 	}
 
-	//row
-	//very simple ascii to int to array conversion 
+	//row: very simple ascii to int to array conversion 
 	int row = ((int)coordinates[1]) - 49;
-	
+
 	// 1- look for less 0's (if zero == 1) is perfect
 	
 	//This variable will contain the number of 0's per Grid
@@ -442,26 +448,338 @@ void computeValues(char board[][SIZE], int &value, char coordinates[], int size)
 	//	   ---+---+---
 	//	    6 | 7 | 8
 
-	int gridContent[9] = {};
-	int grid[9][9] = {};
+	//Total zeros per grid
+	int totalZeros[9] = {};
 
+	//board organized by grid instead of rows and columns
+	int grid[9][9] = {};
+	createGrid(board, totalZeros, grid);
+	
+	//This value will contain the values per specific column
+	int gridVertical[9] = {};
+	getVerticalValues(board, gridVertical, col);
+
+	//This value will contain the values per specific row
+	int gridHorizontal[9] = {};
+	getHorizontalValues(board, gridHorizontal, row);
+
+	//get possible value per col
+	int possibleValuesCol[9];
+	int colCount = getPossibleValues(gridVertical, possibleValuesCol);
+	
+	//get possible value per row
+	int possibleValuesRow[9];
+	int rowCount = getPossibleValues(gridHorizontal, possibleValuesRow);
+
+	//merge both possible values
+	int mergeValues[9];
+	int possibleMax = mergeLines(mergeValues, possibleValuesCol, colCount, possibleValuesRow, rowCount, gridHorizontal, gridVertical);
+
+	//get grid values
+	int possibleValues[9];
+	int gridNumber(0);
+	getGridValue(grid, col, row, gridNumber);
+
+	int index = removePossible(possibleValues, mergeValues, possibleMax, grid, gridNumber);
+	//Test
+	cout << "TEST SECTION! \n";
+	cout << endl;
+
+	cout << "Test for possible values for Row \n";
+	for (int i = 0; i < rowCount; i++)
+	{
+		cout << possibleValuesRow[i] << " ";
+	}
+	cout << endl;
+
+
+	cout << "Test for possible values for column: \n";
+	for (int j(0); j < colCount; j++)
+	{
+		cout << possibleValuesCol[j] << " ";
+
+	}
+	cout << endl;
+
+	cout << "Test for possible values for MERGE VALUES \n";
+	for (int i = 0; i < possibleMax; i++)
+	{
+		cout << mergeValues[i] << " ";
+	}
+	cout << endl;
+	
+
+	cout << "Test for possible FINAL \n";
+	for (int i = 0; i < index; i++)
+	{
+		cout << possibleValues[i] << " ";
+	}
+	cout << endl;
+
+}
+
+void getHorizontalValues(int board[][SIZE], int rowContent[], int row)
+{
+	int rMax = row + 1;
+	for (int Row(row); Row < rMax; Row++)
+	{
+		for (int Col(0); Col < 9; Col++)
+		{
+			rowContent[Col] = board[Row][Col];
+
+		}
+	}
+}
+
+void getVerticalValues(int board[][SIZE], int columnContent[], int col)
+{
+	int cMax = col + 1;
+	for (int Row(0); Row < 9; Row++)
+	{
+		
+		for (int Col(col); Col < cMax; Col++)
+		{
+			columnContent[Row] = board[Row][Col];
+
+		}
+	}
+
+}
+
+void createGrid(int board[][SIZE], int totalZeros[], int grid[][9])
+{
+	//Index will keep track of array/grid
 	int index(0);
-	char colu('a');
+	//This will help with the content of each grid
 	int element(0);
+
+	//iterate through board
 	for (int gridRow(0); gridRow < 3; gridRow++)
 	{
 		for (int gridCol(0); gridCol < 3; gridCol++)
 		{
-			
-			
-			//Lets make it better
 			for (int r(0); r < 9; r++)
 			{
-
 				if (r / 3 == gridRow)
 				{
 					for (int c(0); c < 9; c++)
 					{
+						if (c / 3 == gridCol)
+						{
+							//This will keep track of total of 0's inside each grid
+							if (board[r][c] == 0)
+								totalZeros[index] += 1;
+							//this will create a 3x3 grid
+							grid[index][element] = board[r][c];
+							element++;
+							//if element = 9, then it got to the end of the row and
+							//it gets resetted
+							if (element == 9)
+							{
+								element = 0;
+								index++;
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+
+}
+
+int getPossibleValues(int gridLine[], int possibleValues[])
+{
+	int index(0);
+	bool isMatch(false);
+	for (int i = 1; i < 10; i++)
+	{
+		for (int j(0); j < 9; j++)
+		{
+			if (i == gridLine[j])
+			{
+				isMatch = true;
+			}
+		}
+		if (!isMatch)
+		{
+			possibleValues[index] = i;
+			index++;
+			
+		}
+		else
+			isMatch = false;
+	}
+
+	return index;
+}
+
+
+int mergeLines(int possibleValues[], int possibleValuesVer[], int verSize, int possibleValuesHor[], int horSize, int gridHorizontal[], int gridVertical[])
+{
+	int index(0);
+	bool isMatch(false);
+		for (int i = 0; i < verSize; i++)
+		{
+			for (int j(0); j < horSize; j++)
+			{
+				if (possibleValuesVer[i] == possibleValuesHor[j])
+				{
+					isMatch = true;
+					possibleValues[index] = possibleValuesVer[i];
+					index++;
+				}
+			}
+			if (!isMatch)
+			{
+				possibleValues[index] = possibleValuesVer[i];
+				index++;
+			}
+			else
+				isMatch = false;
+		}
+		int max = index;
+
+		//second part
+		for (int i = 0; i < horSize; i++)
+		{
+			for (int j(0); j < max; j++)
+			{
+				if (possibleValuesHor[i] == possibleValuesVer[j])
+				{
+					isMatch = true;
+					//nothing as it was already added
+				}
+			}
+			if (!isMatch)
+			{
+				possibleValues[index] = possibleValuesHor[i];
+				index++;
+
+			}
+			else
+				isMatch = false;
+		}
+
+		int combinedValues[18];
+		for (int i = 0; i < 9 ;i++)
+		{
+		
+			combinedValues[i]  = gridHorizontal[i];
+
+		}
+		int j(0);
+		for (int i = 9; i < 18; i++)
+		{
+			combinedValues[i] = gridVertical[j];
+			j++;
+		}
+
+		//third part  remove duplicate 
+		int placeholder[9];
+		int temp (0);
+		for (int i = 0; i < index; i++)
+		{
+			for (int j(0); j < 18; j++)
+			{
+				if (possibleValues[i] == combinedValues[j])
+				{
+					isMatch = true;
+					//nothing as it's duplicate
+				}
+			}
+			if (!isMatch)
+			{
+				placeholder[temp] = possibleValues[i];
+				temp++;
+
+			}
+			else
+				isMatch = false;
+		}
+
+		for (int i = 0; i < temp; i++)
+		{
+			possibleValues[i] = placeholder[i];
+		
+		}
+
+		index = temp;
+
+	return index;
+}
+
+int removePossible(int possibleValues[], int mergeValues[], int possibleSize, int grid[][SIZE], int gridNumber)
+{
+	int index(0);
+	bool isMatch(false);
+	for (int i = 0; i <possibleSize; i++)
+	{
+		for (int j(0); j < 9; j++)
+		{
+			if (mergeValues[i] == grid[gridNumber][j])
+			{
+				isMatch = true;
+				
+			}
+		}
+		if (!isMatch)
+		{
+			possibleValues[index] = mergeValues[i];
+			index++;
+		}
+		else
+			isMatch = false;
+	}
+
+	return index;
+}
+
+
+int getGridValue(int grid[][SIZE], int col, int row, int &gridNumber)
+{
+	//return value
+	int gridValue(0);
+
+	//Index will keep track of array/grid
+	int index(0);
+	//This will help with the content of each grid
+	int element(0);
+
+	//iterate through board
+	for (int gridRow(0); gridRow < 3; gridRow++)
+	{
+		for (int gridCol(0); gridCol < 3; gridCol++)
+		{
+			for (int r(0); r < 9; r++)
+			{
+				if (r / 3 == gridRow)
+				{
+					for (int c(0); c < 9; c++)
+					{
+						if (c / 3 == gridCol)
+						{
+							if (r == row && c == col)
+							{
+								gridNumber = index;
+								gridValue = grid[index][element];
+							}
+							element++;
+							if (element == 9)
+							{
+								element = 0;
+								index++;
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+
+	return gridValue;
+}
+/*
 						switch (c)
 						{
 						case 0:
@@ -494,35 +812,4 @@ void computeValues(char board[][SIZE], int &value, char coordinates[], int size)
 						default:
 							break;
 						}
-
-						if (c / 3 == gridCol)
-						{
-
-							if (board[r][c] == '0')
-								gridContent[index] += 1;
-							grid[index][element] = ((int)board[r][c]) - 48;
-							element++;
-							if (element == 9)
-							{
-								element = 0;
-								index++;
-							}
-						}
-					}
-					
-				}
-
-			
-			}
-
-		}
-	}
-
-	for (int i(0); i < 9; i++)
-	{
-		for (int j(0); j < 9; j++)
-		cout << "Grid #" << i <<": " << grid[i][j] << endl;
-	}
-	cout << endl;
-
-}
+*/
